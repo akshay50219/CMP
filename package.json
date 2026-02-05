@@ -1,0 +1,21 @@
+{
+  "name": "cmp",
+  "version": "1.0.0",
+  "description": "��#\u0000 \u0000C\u0000M\u0000P\u0000\r\u0000 \u0000#\u0000 \u0000C\u0000M\u0000P\u0000\r\u0000 \u0000",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/akshay50219/CMP.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/akshay50219/CMP/issues"
+  },
+  "homepage": "https://github.com/akshay50219/CMP#readme"
+}
