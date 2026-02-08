@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/akshay50219/CMP#readme",
   "dependencies": {
+    "mongoose": "^9.1.6",
     "pdfkit": "^0.17.2"
   }
 }

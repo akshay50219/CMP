@@ -13,18 +13,23 @@ const userSchema = new mongoose.Schema(
       required: true,
       unique: true,
       lowercase: true,
-      index: true
+      index: true,
+      trim: true,
+      match: [/^\S+@\S+\.\S+$/, 'Please use a valid email']
     },
 
     password: {
       type: String,
-      required: true
+      required: true,
+      minlength: 6,
+      select: false   // 🔐 hides password by default
     },
 
     role: {
       type: String,
       enum: ['author', 'reviewer', 'admin'],
-      required: true
+      required: true,
+      default: 'author'
     },
 
     affiliation: {
