@@ -17,5 +17,8 @@
   "bugs": {
     "url": "https://github.com/akshay50219/CMP/issues"
   },
-  "homepage": "https://github.com/akshay50219/CMP#readme"
+  "homepage": "https://github.com/akshay50219/CMP#readme",
+  "dependencies": {
+    "pdfkit": "^0.17.2"
+  }
 }
