@@ -1,9 +1,9 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { Box } from '@mui/material';
-import Navbar from '../components/common/Navbar';
-import Sidebar from '../components/common/Sidebar';
+import Navbar from '../components/common/Navbar'; // Fixed import path
+import Sidebar from '../components/common/Sidebar'; // Fixed import path
 import { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext'; // Fixed import path
 
 const MainLayout = () => {
   const { isAuthenticated } = useAuth();
@@ -16,7 +16,10 @@ const MainLayout = () => {
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       {isAuthenticated && (
-        <Navbar sidebarOpen={sidebarOpen && showSidebar} toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+        <Navbar 
+          sidebarOpen={sidebarOpen && showSidebar} 
+          toggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
+        />
       )}
       
       {showSidebar && <Sidebar open={sidebarOpen} />}

@@ -13,7 +13,8 @@ import {
   InputAdornment,
 } from '@mui/material';
 import { Visibility, VisibilityOff, Home as HomeIcon } from '@mui/icons-material';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from "../../context/AuthContext";
+import { toast } from 'react-toastify'; // ADD THIS IMPORT
 
 const schema = yup.object({
   email: yup.string().email('Invalid email').required('Email is required'),
@@ -37,9 +38,30 @@ const Login = () => {
   const onSubmit = async (data) => {
     try {
       setError('');
-      await login(data.email, data.password);
+      const result = await login(data.email, data.password);
+      
+      if (result.success) {
+        // Navigate based on role - FIXED: check result.user exists
+        const userRole = result.user?.role || 'author';
+        switch(userRole) {
+          case 'admin':
+            navigate('/admin');
+            break;
+          case 'reviewer':
+            navigate('/reviewer');
+            break;
+          case 'author':
+            navigate('/author');
+            break;
+          default:
+            navigate('/dashboard');
+        }
+      } else {
+        setError(result.error || 'Invalid credentials. Please try again.');
+      }
     } catch (err) {
       setError('Invalid credentials. Please try again.');
+      console.error('Login error:', err);
     }
   };
 
@@ -76,6 +98,7 @@ const Login = () => {
         error={!!errors.email}
         helperText={errors.email?.message}
         autoComplete="email"
+        disabled={isSubmitting}
       />
 
       <TextField
@@ -87,10 +110,15 @@ const Login = () => {
         error={!!errors.password}
         helperText={errors.password?.message}
         autoComplete="current-password"
+        disabled={isSubmitting}
         InputProps={{
           endAdornment: (
             <InputAdornment position="end">
-              <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+              <IconButton 
+                onClick={() => setShowPassword(!showPassword)} 
+                edge="end"
+                disabled={isSubmitting}
+              >
                 {showPassword ? <VisibilityOff /> : <Visibility />}
               </IconButton>
             </InputAdornment>
@@ -113,7 +141,7 @@ const Login = () => {
         <Typography variant="body2" color="text.secondary">
           Don't have an account?{' '}
           <Link to="/register" style={{ textDecoration: 'none' }}>
-            <Button variant="text" color="primary">
+            <Button variant="text" color="primary" disabled={isSubmitting}>
               Sign Up
             </Button>
           </Link>
@@ -121,12 +149,14 @@ const Login = () => {
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
           Demo Accounts:
         </Typography>
-        <Typography variant="caption" color="text.secondary">
-          Admin: admin@cmp.com / password
+        <Typography variant="caption" color="text.secondary" component="div">
+          Admin: admin@conference.com / admin123
         </Typography>
-        <br />
-        <Typography variant="caption" color="text.secondary">
-          Reviewer: reviewer@cmp.com / password
+        <Typography variant="caption" color="text.secondary" component="div">
+          Reviewer: reviewer@conference.com / reviewer123
+        </Typography>
+        <Typography variant="caption" color="text.secondary" component="div">
+          Author: author@conference.com / author123
         </Typography>
       </Box>
     </Box>

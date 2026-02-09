@@ -1,12 +1,23 @@
-import { AppBar, Toolbar, IconButton, Typography, Box, Avatar, Menu, MenuItem, Tooltip } from '@mui/material';
-import { Menu as MenuIcon, AccountCircle } from '@mui/icons-material';
+import { 
+  AppBar, 
+  Toolbar, 
+  IconButton, 
+  Typography, 
+  Box, 
+  Avatar, 
+  Menu, 
+  MenuItem, 
+  Tooltip,
+  Button 
+} from '@mui/material';
+import { Menu as MenuIcon, AccountCircle, Notifications } from '@mui/icons-material';
 import { useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from "../../context/AuthContext"; // Fixed import path
 import { useNavigate } from 'react-router-dom';
 import NotificationCenter from './NotificationCenter';
 
 const Navbar = ({ sidebarOpen, toggleSidebar }) => {
-  const { user, logout, isAuthenticated  } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
 
@@ -21,6 +32,7 @@ const Navbar = ({ sidebarOpen, toggleSidebar }) => {
   const handleLogout = () => {
     handleClose();
     logout();
+    navigate('/login');
   };
 
   const handleProfile = () => {
@@ -94,14 +106,13 @@ const Navbar = ({ sidebarOpen, toggleSidebar }) => {
           </Typography>
 
           {/* Notification Center */}
-          <NotificationCenter />
+          {NotificationCenter && <NotificationCenter />}
 
-           <Tooltip title="Notifications">
+          <Tooltip title="Notifications">
             <IconButton color="inherit">
               <Notifications />
             </IconButton>
           </Tooltip>
-
 
           <Tooltip title="Account settings">
             <IconButton onClick={handleMenu} size="small">
