@@ -40,7 +40,7 @@ exports.downloadPaper = async (req, res) => {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    const filePath = path.resolve(review.paper.pdfPath);
+    const filePath = path.resolve(__dirname, '..', 'uploads', review.paper.pdfPath);
     res.download(filePath);
   } catch (error) {
     res.status(500).json({ message: 'File download failed' });

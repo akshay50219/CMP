@@ -1,4 +1,5 @@
 const Paper = require('../models/paper.model');
+const path = require('path');
 
 /**
  * Submit a new paper
@@ -11,20 +12,32 @@ exports.submitPaper = async (req, res) => {
       return res.status(400).json({ message: 'Paper file is required' });
     }
 
+    // Create relative path for storage
+    const relativePath = path.relative(process.cwd(), req.file.path);
+
     const paper = await Paper.create({
       title,
       abstract,
-      keywords: keywords ? keywords.split(',') : [],
+      keywords: keywords ? keywords.split(',').map(k => k.trim()) : [],
       authors: [req.user._id],
-      pdfPath: req.file.path
+      pdfPath: relativePath,
+      status: 'submitted'
     });
 
     res.status(201).json({
       message: 'Paper submitted successfully',
-      paper
+      paper: {
+        id: paper._id,
+        title: paper.title,
+        status: paper.status
+      }
     });
   } catch (error) {
-    res.status(500).json({ message: 'Paper submission failed' });
+    console.error("Paper submission error:", error);
+    res.status(500).json({ 
+      message: 'Paper submission failed',
+      error: error.message 
+    });
   }
 };
 
@@ -35,10 +48,16 @@ exports.getMyPapers = async (req, res) => {
   try {
     const papers = await Paper.find({
       authors: req.user._id
-    }).sort({ createdAt: -1 });
+    })
+      .select('title abstract status finalDecision createdAt')
+      .sort({ createdAt: -1 });
 
     res.status(200).json(papers);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch papers' });
+    console.error("Get papers error:", error);
+    res.status(500).json({ 
+      message: 'Failed to fetch papers',
+      error: error.message 
+    });
   }
 };

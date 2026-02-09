@@ -6,7 +6,7 @@ const generateToken = require('../utils/token');
  * Register new user
  */
 exports.register = async (req, res) => {
-  const { name, email, password, role, affiliation } = req.body;
+  const { name, email, password, role = 'author', affiliation = '' } = req.body;
 
   try {
     // 1. Validation
@@ -38,36 +38,38 @@ exports.register = async (req, res) => {
       affiliation
     });
 
-    // 5. Send response
+    // 5. Generate token
+    const token = generateToken(user._id, user.role);
+
+    // 6. Send response
     res.status(201).json({
       message: "User registered successfully",
-      token: generateToken(user._id),   // IMPORTANT FIX
+      token: token,
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        affiliation: user.affiliation
       }
     });
 
   } catch (error) {
-    console.error("Register error:", error);   // IMPORTANT
+    console.error("Register error:", error.message);
     res.status(500).json({
-      message: "Registration failed"
+      message: "Registration failed",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
-
 
 /**
  * Login user
  */
 exports.login = async (req, res) => {
-
   const { email, password } = req.body;
 
   try {
-
     // 1. Validation
     if (!email || !password) {
       return res.status(400).json({
@@ -76,7 +78,7 @@ exports.login = async (req, res) => {
     }
 
     // 2. Find user
-    const user = await User.findOne({ email }).select("+password");
+    const user = await User.findOne({ email }).select('+password');
 
     if (!user) {
       return res.status(401).json({
@@ -93,22 +95,27 @@ exports.login = async (req, res) => {
       });
     }
 
-    // 4. Send response
+    // 4. Generate token
+    const token = generateToken(user._id, user.role);
+
+    // 5. Send response
     res.status(200).json({
       message: "Login successful",
-      token: generateToken(user._id),   // IMPORTANT FIX
+      token: token,
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        affiliation: user.affiliation
       }
     });
 
   } catch (error) {
-    console.error("Login error:", error);   // IMPORTANT
+    console.error("Login error:", error.message);
     res.status(500).json({
-      message: "Login failed"
+      message: "Login failed",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };

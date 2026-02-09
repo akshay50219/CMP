@@ -34,8 +34,8 @@ const reviewSchema = new mongoose.Schema(
 
     recommendation: {
       type: String,
-      enum: ['accept', 'weak_accept', 'weak_reject', 'reject'],
-      required: true
+      enum: ['accept', 'weak_accept', 'weak_reject', 'reject', 'pending'],
+      default: 'pending'
     }
   },
   { timestamps: true }
