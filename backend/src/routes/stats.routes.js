@@ -6,18 +6,25 @@ const authorizeRoles = require('../middleware/role.middleware');
 
 const {
   getAdminStats,
-  getPublicStats
+  getPublicStats,
+  getDashboardStats,
+  getSubmissionStats,
 } = require('../controllers/stats.controller');
 
 /**
- * Admin-only statistics
+ * Admin-only detailed dashboard statistics
  */
-router.get(
-  '/admin',
-  protect,
-  authorizeRoles('admin'),
-  getAdminStats
-);
+router.get('/dashboard', protect, authorizeRoles('admin'), getDashboardStats);
+
+/**
+ * Admin-only simple statistics (legacy)
+ */
+router.get('/admin', protect, authorizeRoles('admin'), getAdminStats);
+
+/**
+ * Submission trends (admin only)
+ */
+router.get('/submissions', protect, authorizeRoles('admin'), getSubmissionStats);
 
 /**
  * Public statistics (no auth)

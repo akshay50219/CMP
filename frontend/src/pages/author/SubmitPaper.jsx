@@ -69,10 +69,9 @@ const SubmitPaper = () => {
 
   const handleFileChange = (event) => {
     const selectedFile = event.target.files[0];
-    setFileError(''); // Clear previous errors
+    setFileError('');
     
     if (selectedFile) {
-      // Check file type (PDF only)
       if (selectedFile.type !== 'application/pdf') {
         setFileError('Please upload a PDF file only');
         setFile(null);
@@ -80,7 +79,6 @@ const SubmitPaper = () => {
         return;
       }
       
-      // Check file size (10MB limit)
       if (selectedFile.size > 10 * 1024 * 1024) {
         setFileError('File size must be less than 10MB');
         setFile(null);
@@ -96,7 +94,6 @@ const SubmitPaper = () => {
   const handleKeywordAdd = () => {
     if (keywordInput.trim() && keywords.length < 5) {
       const trimmedKeyword = keywordInput.trim();
-      // Check for duplicates
       if (keywords.includes(trimmedKeyword)) {
         toast.warning('Keyword already added');
         return;
@@ -122,7 +119,6 @@ const SubmitPaper = () => {
   const handleAuthorAdd = () => {
     if (authorInput.trim() && authors.length < 10) {
       const trimmedAuthor = authorInput.trim();
-      // Check for duplicates
       if (authors.includes(trimmedAuthor)) {
         toast.warning('Author already added');
         return;
@@ -173,21 +169,19 @@ const SubmitPaper = () => {
     try {
       setUploading(true);
       
-      // Create FormData for file upload
       const formData = new FormData();
       formData.append('title', data.title);
       formData.append('abstract', data.abstract);
       formData.append('track', data.track);
       formData.append('keywords', JSON.stringify(data.keywords));
       formData.append('authors', JSON.stringify(data.authors));
-      formData.append('pdf', file); // Changed from 'paperFile' to 'pdf' to match backend
+      // ✅ CHANGED: field name from 'pdf' to 'paper' to match backend
+      formData.append('paper', file);
 
-      // Show loading toast
       const toastId = toast.loading('Submitting paper...');
 
       const response = await paperService.submitPaper(formData);
       
-      // Update toast to success
       toast.update(toastId, {
         render: 'Paper submitted successfully!',
         type: 'success',
@@ -195,7 +189,6 @@ const SubmitPaper = () => {
         autoClose: 3000,
       });
       
-      // Navigate to papers list
       navigate('/author/papers', {
         state: { 
           message: 'Paper submitted successfully!',
@@ -209,7 +202,6 @@ const SubmitPaper = () => {
       let errorMessage = 'Submission failed. Please try again.';
       
       if (error.response) {
-        // Server responded with error
         if (error.response.status === 401) {
           errorMessage = 'Session expired. Please login again.';
           setTimeout(() => navigate('/login'), 2000);
@@ -217,7 +209,6 @@ const SubmitPaper = () => {
           errorMessage = error.response.data.message;
         }
       } else if (error.request) {
-        // Request made but no response
         errorMessage = 'Network error. Please check your connection.';
       }
       
@@ -227,7 +218,6 @@ const SubmitPaper = () => {
     }
   };
 
-  // Handle Enter key for keyword/author input
   const handleKeyPress = (e, type) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -274,9 +264,7 @@ const SubmitPaper = () => {
                 rows={6}
                 placeholder="Provide a comprehensive abstract of your paper"
                 variant="outlined"
-                inputProps={{
-                  maxLength: 1500,
-                }}
+                inputProps={{ maxLength: 1500 }}
               />
               <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
                 Characters: {watch('abstract')?.length || 0}/1500

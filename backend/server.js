@@ -80,6 +80,7 @@ const adminRoutes = require("./src/routes/admin.routes");
 const programRoutes = require("./src/routes/program.routes");
 const statsRoutes = require("./src/routes/stats.routes");
 const testRoutes = require("./src/routes/test.routes");
+const paperRoutes = require("./src/routes/paper.routes");
 
 // ==================== ROUTES ====================
 app.use("/api/auth", authRoutes);
@@ -89,6 +90,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/program", programRoutes);
 app.use("/api/stats", statsRoutes);
 app.use("/api/test", testRoutes);
+app.use("/api/papers", paperRoutes);
 
 // ==================== HEALTH CHECK ====================
 app.get("/api/health", (req, res) => {
