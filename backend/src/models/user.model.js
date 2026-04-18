@@ -5,7 +5,7 @@ const userSchema = new mongoose.Schema(
     name: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
 
     email: {
@@ -15,38 +15,38 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       index: true,
       trim: true,
-      match: [/^\S+@\S+\.\S+$/, 'Please use a valid email']
+      match: [/^\S+@\S+\.\S+$/, 'Please use a valid email'],
     },
 
     password: {
       type: String,
       required: true,
       minlength: 6,
-      select: false   // 🔐 hides password by default
+      select: false, // 🔐 hides password by default
     },
 
     role: {
       type: String,
       enum: ['author', 'reviewer', 'admin'],
       required: true,
-      default: 'author'
+      default: 'author',
     },
 
     affiliation: {
       type: String,
-      default: ''
+      default: '',
     },
 
-    expertiseAreas: [
-      {
-        type: String
-      }
-    ],
+    // Single string field for reviewer expertise (comma‑separated values)
+    expertise: {
+      type: String,
+      default: '',
+    },
 
     isActive: {
       type: Boolean,
-      default: true
-    }
+      default: true,
+    },
   },
   { timestamps: true }
 );

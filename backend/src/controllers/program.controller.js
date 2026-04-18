@@ -1,5 +1,5 @@
 const Paper = require('../models/paper.model');
-const generateProgramPDF = require('../utils/programPdf');
+const generateProgramPDF = require('../utils/programPDF'); // corrected import
 
 /**
  * Preview conference program (JSON)
@@ -7,9 +7,8 @@ const generateProgramPDF = require('../utils/programPdf');
 exports.previewProgram = async (req, res) => {
   try {
     const papers = await Paper.find({
-      finalDecision: 'accept'
+      finalDecision: 'accept',
     })
-      .populate('authors', 'name affiliation')
       .sort({ title: 1 });
 
     res.status(200).json(papers);
@@ -24,9 +23,8 @@ exports.previewProgram = async (req, res) => {
 exports.downloadProgramPDF = async (req, res) => {
   try {
     const papers = await Paper.find({
-      finalDecision: 'accept'
+      finalDecision: 'accept',
     })
-      .populate('authors', 'name affiliation')
       .sort({ title: 1 });
 
     res.setHeader('Content-Type', 'application/pdf');

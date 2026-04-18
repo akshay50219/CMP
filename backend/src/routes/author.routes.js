@@ -7,7 +7,9 @@ const uploadPaper = require('../middleware/upload.middleware');
 
 const {
   submitPaper,
-  getMyPapers
+  getMyPapers,
+  updatePaper,
+  deletePaper,
 } = require('../controllers/author.controller');
 
 // Author-only middleware chain
@@ -22,5 +24,11 @@ router.post(
 
 // View own papers
 router.get('/papers', getMyPapers);
+
+// Update paper (only if submitted)
+router.put('/papers/:id', updatePaper);
+
+// Delete paper (only if submitted)
+router.delete('/papers/:id', deletePaper);
 
 module.exports = router;
