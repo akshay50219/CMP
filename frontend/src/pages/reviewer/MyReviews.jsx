@@ -12,7 +12,6 @@ import {
   TablePagination,
   Chip,
   IconButton,
-  LinearProgress,
   Alert,
   Rating,
   Dialog,
@@ -21,6 +20,7 @@ import {
   DialogActions,
   Button,
   TextField,
+  MenuItem, // ✅ FIX
 } from '@mui/material';
 import {
   Visibility,
@@ -30,8 +30,11 @@ import {
   Refresh,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { reviewService, paperService } from '../../services/api';
+import { reviewService } from '../../services/api';
 import { toast } from 'react-toastify';
+
+/* ✅ ADD */
+import SkeletonLoader from '../../components/SkeletonLoader';
 
 const MyReviews = () => {
   const navigate = useNavigate();
@@ -44,29 +47,36 @@ const MyReviews = () => {
   const [selectedReview, setSelectedReview] = useState(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
 
-  useEffect(() => {
-    fetchMyReviews();
-  }, []);
-
+  /* ✅ DEFINE BEFORE useEffect */
   const fetchMyReviews = async () => {
     try {
       setLoading(true);
       const response = await reviewService.getMyReviews();
       setReviews(response.data);
-    } catch (error) {
+    } catch {
       toast.error('Failed to load reviews');
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    fetchMyReviews();
+  }, []);
+
+  /* ✅ FIX: pagination handlers */
+  const handleChangePage = (_, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   const handleViewReview = (review) => {
     setSelectedReview(review);
     setViewDialogOpen(true);
-  };
-
-  const handleEditReview = (paperId) => {
-    navigate(`/reviewer/review/${paperId}`);
   };
 
   const getRecommendationColor = (rec) => {
@@ -88,21 +98,21 @@ const MyReviews = () => {
   };
 
   const filteredReviews = reviews.filter((review) => {
-    const matchesSearch = review.paperTitle?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         review.comments?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesRecommendation = filterRecommendation === 'all' || 
-                                 review.recommendation === filterRecommendation;
-    
+    const matchesSearch =
+      review.paperTitle?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      review.comments?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesRecommendation =
+      filterRecommendation === 'all' ||
+      review.recommendation === filterRecommendation;
+
     return matchesSearch && matchesRecommendation;
   });
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">
-          My Reviews
-        </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+        <Typography variant="h4">My Reviews</Typography>
         <Button
           variant="contained"
           startIcon={<Refresh />}
@@ -113,93 +123,65 @@ const MyReviews = () => {
         </Button>
       </Box>
 
-      {/* Filters and Search */}
+      {/* Filters */}
       <Paper sx={{ p: 2, mb: 3 }}>
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', gap: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
-            <Search sx={{ mr: 1, color: 'action.active' }} />
+            <Search sx={{ mr: 1 }} />
             <TextField
-              variant="outlined"
-              placeholder="Search reviews by paper title or comments..."
               size="small"
+              placeholder="Search reviews..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              sx={{ flexGrow: 1 }}
+              fullWidth
             />
           </Box>
-          
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <FilterList />
-            <TextField
-              select
-              size="small"
-              value={filterRecommendation}
-              onChange={(e) => setFilterRecommendation(e.target.value)}
-              sx={{ minWidth: 150 }}
-            >
-              {[
-                { value: 'all', label: 'All Recommendations' },
-                { value: 'accept', label: 'Accept' },
-                { value: 'revision', label: 'Revision' },
-                { value: 'reject', label: 'Reject' },
-              ].map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Box>
+
+          <TextField
+            select
+            size="small"
+            value={filterRecommendation}
+            onChange={(e) => setFilterRecommendation(e.target.value)}
+            sx={{ minWidth: 160 }}
+          >
+            <MenuItem value="all">All</MenuItem>
+            <MenuItem value="accept">Accept</MenuItem>
+            <MenuItem value="revision">Revision</MenuItem>
+            <MenuItem value="reject">Reject</MenuItem>
+          </TextField>
         </Box>
       </Paper>
 
-      {/* Reviews Table */}
-      <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+      {/* Table */}
+      <Paper>
         {loading ? (
-          <LinearProgress />
+          <SkeletonLoader rows={6} />
         ) : filteredReviews.length === 0 ? (
           <Alert severity="info" sx={{ m: 2 }}>
-            You haven't submitted any reviews yet.
+            You haven’t submitted any reviews yet.
           </Alert>
         ) : (
           <>
-            <TableContainer sx={{ maxHeight: 440 }}>
-              <Table stickyHeader>
+            <TableContainer>
+              <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>Paper Title</TableCell>
-                    <TableCell>Track</TableCell>
-                    <TableCell>Overall Rating</TableCell>
+                    <TableCell>Paper</TableCell>
+                    <TableCell>Rating</TableCell>
                     <TableCell>Recommendation</TableCell>
-                    <TableCell>Submitted Date</TableCell>
-                    <TableCell align="center">Actions</TableCell>
+                    <TableCell>Date</TableCell>
+                    <TableCell align="center">Action</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {filteredReviews
                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                     .map((review) => (
-                      <TableRow key={review._id} hover>
+                      <TableRow key={review._id}>
+                        <TableCell>{review.paperTitle}</TableCell>
                         <TableCell>
-                          <Typography variant="body1" noWrap sx={{ maxWidth: 300 }}>
-                            {review.paperTitle}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Chip label={review.paperTrack} size="small" />
-                        </TableCell>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Typography variant="body2">
-                              {review.overallRating}/10
-                            </Typography>
-                            <Rating
-                              value={review.overallRating}
-                              max={10}
-                              size="small"
-                              readOnly
-                              precision={0.5}
-                            />
-                          </Box>
+                          {review.overallRating}/10
+                          <Rating value={review.overallRating} max={10} readOnly size="small" />
                         </TableCell>
                         <TableCell>
                           <Chip
@@ -212,35 +194,26 @@ const MyReviews = () => {
                           {new Date(review.submittedAt).toLocaleDateString()}
                         </TableCell>
                         <TableCell align="center">
-                          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleViewReview(review)}
-                              color="primary"
-                            >
-                              <Visibility />
-                            </IconButton>
-                            
-                            <IconButton
-                              size="small"
-                              onClick={() => handleEditReview(review.paperId)}
-                              color="info"
-                            >
-                              <Edit />
-                            </IconButton>
-                          </Box>
+                          <IconButton onClick={() => handleViewReview(review)}>
+                            <Visibility />
+                          </IconButton>
+
+                          {/* ❌ EDIT DISABLED */}
+                          <IconButton disabled>
+                            <Edit />
+                          </IconButton>
                         </TableCell>
                       </TableRow>
                     ))}
                 </TableBody>
               </Table>
             </TableContainer>
+
             <TablePagination
-              rowsPerPageOptions={[5, 10, 25]}
               component="div"
               count={filteredReviews.length}
-              rowsPerPage={rowsPerPage}
               page={page}
+              rowsPerPage={rowsPerPage}
               onPageChange={handleChangePage}
               onRowsPerPageChange={handleChangeRowsPerPage}
             />
@@ -248,130 +221,16 @@ const MyReviews = () => {
         )}
       </Paper>
 
-      {/* Review Statistics */}
-      <Paper sx={{ p: 3, mt: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          Review Statistics
-        </Typography>
-        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-          {[
-            { label: 'Total Reviews', value: reviews.length },
-            { label: 'Average Rating', value: (reviews.reduce((acc, r) => acc + r.overallRating, 0) / reviews.length || 0).toFixed(1) },
-            { label: 'Accept Recommendations', value: reviews.filter(r => r.recommendation === 'accept').length },
-            { label: 'Revision Recommendations', value: reviews.filter(r => r.recommendation === 'revision').length },
-            { label: 'Reject Recommendations', value: reviews.filter(r => r.recommendation === 'reject').length },
-          ].map((stat, index) => (
-            <Box key={index} sx={{ textAlign: 'center', p: 2, minWidth: 150 }}>
-              <Typography variant="h5" color="primary">
-                {stat.value}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {stat.label}
-              </Typography>
-            </Box>
-          ))}
-        </Box>
-      </Paper>
-
-      {/* Review Details Dialog */}
-      <Dialog
-        open={viewDialogOpen}
-        onClose={() => setViewDialogOpen(false)}
-        maxWidth="md"
-        fullWidth
-      >
+      {/* View Dialog */}
+      <Dialog open={viewDialogOpen} onClose={() => setViewDialogOpen(false)} maxWidth="md" fullWidth>
         {selectedReview && (
           <>
-            <DialogTitle>
-              Review Details
-              <Typography variant="subtitle2" color="text.secondary">
-                {selectedReview.paperTitle}
-              </Typography>
-            </DialogTitle>
+            <DialogTitle>{selectedReview.paperTitle}</DialogTitle>
             <DialogContent dividers>
-              <Grid container spacing={2}>
-                <Grid item xs={12} md={6}>
-                  <Typography variant="subtitle2">Overall Rating</Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography variant="h6">{selectedReview.overallRating}/10</Typography>
-                    <Rating value={selectedReview.overallRating} max={10} readOnly />
-                  </Box>
-                </Grid>
-                
-                <Grid item xs={12} md={6}>
-                  <Typography variant="subtitle2">Recommendation</Typography>
-                  <Chip
-                    label={getRecommendationLabel(selectedReview.recommendation)}
-                    color={getRecommendationColor(selectedReview.recommendation)}
-                  />
-                </Grid>
-                
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2">Criteria Ratings</Typography>
-                  <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mt: 1 }}>
-                    {[
-                      { label: 'Originality', value: selectedReview.originality },
-                      { label: 'Technical Soundness', value: selectedReview.technicalSoundness },
-                      { label: 'Clarity', value: selectedReview.clarity },
-                      { label: 'Significance', value: selectedReview.significance },
-                      { label: 'References', value: selectedReview.references },
-                    ].map((criteria, index) => (
-                      <Box key={index} sx={{ textAlign: 'center' }}>
-                        <Typography variant="body2">{criteria.label}</Typography>
-                        <Typography variant="h6">{criteria.value}/10</Typography>
-                      </Box>
-                    ))}
-                  </Box>
-                </Grid>
-                
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2">Strengths</Typography>
-                  <Typography variant="body2" paragraph>
-                    {selectedReview.strengths}
-                  </Typography>
-                </Grid>
-                
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2">Areas for Improvement</Typography>
-                  <Typography variant="body2" paragraph>
-                    {selectedReview.weaknesses}
-                  </Typography>
-                </Grid>
-                
-                <Grid item xs={12}>
-                  <Typography variant="subtitle2">Comments to Authors</Typography>
-                  <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
-                    <Typography variant="body2">
-                      {selectedReview.comments}
-                    </Typography>
-                  </Paper>
-                </Grid>
-                
-                {selectedReview.confidentialComments && (
-                  <Grid item xs={12}>
-                    <Typography variant="subtitle2" color="error">
-                      Confidential Comments to Committee
-                    </Typography>
-                    <Paper sx={{ p: 2, bgcolor: 'error.light' }}>
-                      <Typography variant="body2">
-                        {selectedReview.confidentialComments}
-                      </Typography>
-                    </Paper>
-                  </Grid>
-                )}
-              </Grid>
+              <Typography variant="body2">{selectedReview.comments}</Typography>
             </DialogContent>
             <DialogActions>
               <Button onClick={() => setViewDialogOpen(false)}>Close</Button>
-              <Button
-                variant="contained"
-                onClick={() => {
-                  setViewDialogOpen(false);
-                  handleEditReview(selectedReview.paperId);
-                }}
-              >
-                Edit Review
-              </Button>
             </DialogActions>
           </>
         )}

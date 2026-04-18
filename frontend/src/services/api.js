@@ -53,7 +53,8 @@ API.interceptors.response.use(
     } else if (!response) {
       toast.error('Network error. Please check your connection.');
     }
-    
+    error.normalized = normalizeApiError(error);
+
     return Promise.reject(error);
   }
 );
@@ -210,35 +211,39 @@ export const handleFileDownload = (blob, filename) => {
   window.URL.revokeObjectURL(url);
 };
 
-// ================= ALIAS EXPORTS (DO NOT REMOVE EXISTING CODE) =================
+// ================================
+// API ERROR NORMALIZATION LAYER
+// ================================
 
-// Paper Service Alias
-export const paperService = {
-  getAllPapers: (params) => adminService.getAllPapers(params),
-  getPaperById: (id) => commonService.getPaper(id),
-  submitPaper: (data) => authorService.submitPaper(data),
-  updatePaper: (id, data) => authorService.updatePaper(id, data),
-  deletePaper: (id) => authorService.withdrawPaper(id),
-};
+export const normalizeApiError = (error) => {
+  // Default normalized error object
+  const normalizedError = {
+    success: false,
+    status: null,
+    message: 'Something went wrong. Please try again.',
+    originalError: error,
+  };
 
-// User Service Alias
-export const userService = {
-  getAllUsers: (params) => adminService.getAllUsers(params),
-  getUserById: (id) => adminService.getUser(id),
-  updateUser: (id, data) => adminService.updateUser(id, data),
-  deleteUser: (id) => adminService.deleteUser(id),
-};
+  // Axios response error
+  if (error.response) {
+    normalizedError.status = error.response.status;
 
-// Review Service Alias
-export const reviewService = {
-  submitReview: (reviewId, data) => reviewerService.submitReview(reviewId, data),
-  getMyReviews: () => reviewerService.getMyReviews(),
-  updateReview: (reviewId, data) => reviewerService.updateReview(reviewId, data),
-};
+    if (error.response.data?.message) {
+      normalizedError.message = error.response.data.message;
+    } else if (typeof error.response.data === 'string') {
+      normalizedError.message = error.response.data;
+    }
+  }
+  // Network / timeout error
+  else if (error.request) {
+    normalizedError.message = 'Network error. Please check your internet connection.';
+  }
+  // Other JS errors
+  else if (error.message) {
+    normalizedError.message = error.message;
+  }
 
-// Stats Service Alias
-export const statsService = {
-  getStats: () => adminService.getStatistics(),
+  return normalizedError;
 };
 
 export default API;

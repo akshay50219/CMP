@@ -14,7 +14,7 @@ import {
 } from '@mui/material';
 import { Visibility, VisibilityOff, Home as HomeIcon } from '@mui/icons-material';
 import { useAuth } from "../../context/AuthContext";
-import { toast } from 'react-toastify'; // ADD THIS IMPORT
+import { toast } from 'react-toastify';
 
 const schema = yup.object({
   email: yup.string().email('Invalid email').required('Email is required'),
@@ -39,11 +39,10 @@ const Login = () => {
     try {
       setError('');
       const result = await login(data.email, data.password);
-      
+
       if (result.success) {
-        // Navigate based on role - FIXED: check result.user exists
         const userRole = result.user?.role || 'author';
-        switch(userRole) {
+        switch (userRole) {
           case 'admin':
             navigate('/admin');
             break;
@@ -61,13 +60,12 @@ const Login = () => {
       }
     } catch (err) {
       setError('Invalid credentials. Please try again.');
-      console.error('Login error:', err);
     }
   };
 
   return (
     <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ mt: 3 }}>
-      {/* Home link at top */}
+      {/* Home link */}
       <Box sx={{ mb: 3, textAlign: 'center' }}>
         <Button
           component={Link}
@@ -83,7 +81,7 @@ const Login = () => {
       <Typography variant="h5" gutterBottom align="center">
         Sign In
       </Typography>
-      
+
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
@@ -114,8 +112,8 @@ const Login = () => {
         InputProps={{
           endAdornment: (
             <InputAdornment position="end">
-              <IconButton 
-                onClick={() => setShowPassword(!showPassword)} 
+              <IconButton
+                onClick={() => setShowPassword(!showPassword)}
                 edge="end"
                 disabled={isSubmitting}
               >
@@ -125,6 +123,15 @@ const Login = () => {
           ),
         }}
       />
+
+      {/* ✅ ADDED: Forgot Password Link */}
+      <Box sx={{ textAlign: 'right', mt: 1 }}>
+        <Link to="/forgot-password" style={{ textDecoration: 'none' }}>
+          <Typography variant="body2" color="primary">
+            Forgot password?
+          </Typography>
+        </Link>
+      </Box>
 
       <Button
         type="submit"
@@ -145,18 +152,6 @@ const Login = () => {
               Sign Up
             </Button>
           </Link>
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          Demo Accounts:
-        </Typography>
-        <Typography variant="caption" color="text.secondary" component="div">
-          Admin: admin@conference.com / admin123
-        </Typography>
-        <Typography variant="caption" color="text.secondary" component="div">
-          Reviewer: reviewer@conference.com / reviewer123
-        </Typography>
-        <Typography variant="caption" color="text.secondary" component="div">
-          Author: author@conference.com / author123
         </Typography>
       </Box>
     </Box>

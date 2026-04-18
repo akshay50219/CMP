@@ -1,13 +1,20 @@
-import { Drawer, List, ListItem, ListItemIcon, ListItemText, Divider, Box, Typography } from '@mui/material';
+import {
+  Drawer,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Divider,
+  Box,
+  Typography,
+} from '@mui/material';
 import {
   Dashboard,
   Description,
   People,
-  Assessment,
   Settings,
   CloudUpload,
   RateReview,
-  AdminPanelSettings,
   InsertChart,
   CalendarToday,
 } from '@mui/icons-material';
@@ -20,6 +27,11 @@ const Sidebar = ({ open }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  /* 🔒 SAFETY: Don’t render sidebar until user is loaded */
+  if (!user) {
+    return null;
+  }
 
   const authorMenuItems = [
     { text: 'Dashboard', icon: <Dashboard />, path: '/author' },
@@ -43,18 +55,14 @@ const Sidebar = ({ open }) => {
     { text: 'System Settings', icon: <Settings />, path: '/admin/settings' },
   ];
 
-  const getMenuItems = () => {
-    switch (user?.role) {
-      case 'admin':
-        return adminMenuItems;
-      case 'reviewer':
-        return reviewerMenuItems;
-      default:
-        return authorMenuItems;
-    }
+  /* ✅ EXPLICIT ROLE FILTERING */
+  const roleMenuMap = {
+    admin: adminMenuItems,
+    reviewer: reviewerMenuItems,
+    author: authorMenuItems,
   };
 
-  const menuItems = getMenuItems();
+  const menuItems = roleMenuMap[user.role] || [];
 
   return (
     <Drawer
@@ -72,17 +80,21 @@ const Sidebar = ({ open }) => {
         },
       }}
     >
+      {/* User Role Info */}
       <Box sx={{ p: 2 }}>
         <Typography variant="subtitle1" color="text.secondary">
-          Role: <strong>{user?.role?.toUpperCase()}</strong>
+          Role: <strong>{user.role.toUpperCase()}</strong>
         </Typography>
-        <Typography variant="caption" color="text.secondary">
-          {user?.affiliation}
-        </Typography>
+        {user.affiliation && (
+          <Typography variant="caption" color="text.secondary">
+            {user.affiliation}
+          </Typography>
+        )}
       </Box>
-      
+
       <Divider />
-      
+
+      {/* Role-Based Menu */}
       <List>
         {menuItems.map((item) => (
           <ListItem
@@ -103,6 +115,15 @@ const Sidebar = ({ open }) => {
             <ListItemText primary={item.text} />
           </ListItem>
         ))}
+
+        {/* 🔎 SAFETY FALLBACK */}
+        {menuItems.length === 0 && (
+          <Box sx={{ p: 2 }}>
+            <Typography variant="body2" color="text.secondary">
+              No menu available for this role.
+            </Typography>
+          </Box>
+        )}
       </List>
     </Drawer>
   );
