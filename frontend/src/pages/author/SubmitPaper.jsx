@@ -2,25 +2,12 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import {
-  Box,
-  TextField,
-  Button,
-  Typography,
-  Paper,
-  Grid,
-  Alert,
-  CircularProgress,
-  MenuItem,
-  Chip,
-} from '@mui/material';
-import { CloudUpload, Delete } from '@mui/icons-material';
+import { Grid, Box, TextField, Button, Typography, Paper, Alert, CircularProgress, MenuItem, Chip } from '@mui/material';
+import { CloudUpload, Delete, Add } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { paperService } from '../../services/api';
 import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 
-// Yup validation schema
 const schema = yup.object({
   title: yup.string().required('Title is required').max(200, 'Title too long'),
   abstract: yup.string().required('Abstract is required').min(100, 'Abstract must be at least 100 characters'),
@@ -29,18 +16,7 @@ const schema = yup.object({
   authors: yup.array().min(1, 'Add at least one author'),
 });
 
-const tracks = [
-  'Artificial Intelligence',
-  'Machine Learning',
-  'Data Science',
-  'Computer Vision',
-  'Natural Language Processing',
-  'Robotics',
-  'Cybersecurity',
-  'Software Engineering',
-  'Cloud Computing',
-  'Internet of Things',
-];
+const tracks = ['Artificial Intelligence', 'Machine Learning', 'Data Science', 'Computer Vision', 'Natural Language Processing', 'Robotics', 'Cybersecurity', 'Software Engineering', 'Cloud Computing', 'Internet of Things'];
 
 const SubmitPaper = () => {
   const navigate = useNavigate();
@@ -49,28 +25,22 @@ const SubmitPaper = () => {
   const [keywords, setKeywords] = useState([]);
   const [keywordInput, setKeywordInput] = useState('');
   const [authors, setAuthors] = useState([]);
-  const [authorInput, setAuthorInput] = useState('');
+  const [authorForm, setAuthorForm] = useState({ name: '', email: '', affiliation: '' });
   const [fileError, setFileError] = useState('');
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-    setValue,
-    watch,
-  } = useForm({
+  const { register, handleSubmit, formState: { errors, isSubmitting }, setValue, watch } = useForm({
     resolver: yupResolver(schema),
-    defaultValues: {
-      keywords: [],
-      authors: [],
-      track: '',
-    },
+    defaultValues: { title: '',
+    abstract: '',
+    track: '',           // ✅ add this
+    keywords: [],
+    authors: [], },
   });
 
+  // File handling
   const handleFileChange = (event) => {
     const selectedFile = event.target.files[0];
     setFileError('');
-    
     if (selectedFile) {
       if (selectedFile.type !== 'application/pdf') {
         setFileError('Please upload a PDF file only');
@@ -78,19 +48,18 @@ const SubmitPaper = () => {
         toast.error('Only PDF files are allowed');
         return;
       }
-      
       if (selectedFile.size > 10 * 1024 * 1024) {
         setFileError('File size must be less than 10MB');
         setFile(null);
         toast.error('File size must be less than 10MB');
         return;
       }
-      
       setFile(selectedFile);
       toast.success('File selected successfully');
     }
   };
 
+  // Keywords
   const handleKeywordAdd = () => {
     if (keywordInput.trim() && keywords.length < 5) {
       const trimmedKeyword = keywordInput.trim();
@@ -98,7 +67,6 @@ const SubmitPaper = () => {
         toast.warning('Keyword already added');
         return;
       }
-      
       const newKeywords = [...keywords, trimmedKeyword];
       setKeywords(newKeywords);
       setValue('keywords', newKeywords, { shouldValidate: true });
@@ -116,26 +84,36 @@ const SubmitPaper = () => {
     toast.info('Keyword removed');
   };
 
+  // Authors with structured object
   const handleAuthorAdd = () => {
-    if (authorInput.trim() && authors.length < 10) {
-      const trimmedAuthor = authorInput.trim();
-      if (authors.includes(trimmedAuthor)) {
-        toast.warning('Author already added');
-        return;
-      }
-      
-      const newAuthors = [...authors, trimmedAuthor];
-      setAuthors(newAuthors);
-      setValue('authors', newAuthors, { shouldValidate: true });
-      setAuthorInput('');
-      toast.success('Author added');
-    } else if (authors.length >= 10) {
-      toast.error('Maximum 10 authors allowed');
+    if (!authorForm.name.trim()) {
+      toast.error('Author name is required');
+      return;
     }
+    if (!authorForm.email.trim()) {
+      toast.error('Author email is required');
+      return;
+    }
+    // Simple email validation
+    const emailRegex = /^\S+@\S+\.\S+$/;
+    if (!emailRegex.test(authorForm.email)) {
+      toast.error('Please enter a valid email');
+      return;
+    }
+    const newAuthor = {
+      name: authorForm.name.trim(),
+      email: authorForm.email.trim(),
+      affiliation: authorForm.affiliation.trim() || '',
+    };
+    const newAuthors = [...authors, newAuthor];
+    setAuthors(newAuthors);
+    setValue('authors', newAuthors, { shouldValidate: true });
+    setAuthorForm({ name: '', email: '', affiliation: '' });
+    toast.success('Author added');
   };
 
-  const handleAuthorDelete = (authorToDelete) => {
-    const newAuthors = authors.filter((author) => author !== authorToDelete);
+  const handleAuthorDelete = (indexToDelete) => {
+    const newAuthors = authors.filter((_, idx) => idx !== indexToDelete);
     setAuthors(newAuthors);
     setValue('authors', newAuthors, { shouldValidate: true });
     toast.info('Author removed');
@@ -147,60 +125,34 @@ const SubmitPaper = () => {
       toast.error('Please upload a PDF file');
       return false;
     }
-    
     if (keywords.length < 3) {
       toast.error('Please add at least 3 keywords');
       return false;
     }
-    
     if (authors.length < 1) {
       toast.error('Please add at least one author');
       return false;
     }
-    
     return true;
   };
 
   const onSubmit = async (data) => {
-    if (!validateForm()) {
-      return;
-    }
-
+    if (!validateForm()) return;
     try {
       setUploading(true);
-      
       const formData = new FormData();
       formData.append('title', data.title);
       formData.append('abstract', data.abstract);
       formData.append('track', data.track);
       formData.append('keywords', JSON.stringify(data.keywords));
       formData.append('authors', JSON.stringify(data.authors));
-      // ✅ CHANGED: field name from 'pdf' to 'paper' to match backend
       formData.append('paper', file);
-
       const toastId = toast.loading('Submitting paper...');
-
-      const response = await paperService.submitPaper(formData);
-      
-      toast.update(toastId, {
-        render: 'Paper submitted successfully!',
-        type: 'success',
-        isLoading: false,
-        autoClose: 3000,
-      });
-      
-      navigate('/author/papers', {
-        state: { 
-          message: 'Paper submitted successfully!',
-          showNotification: true 
-        }
-      });
-      
+      await paperService.submitPaper(formData);
+      toast.update(toastId, { render: 'Paper submitted successfully!', type: 'success', isLoading: false, autoClose: 3000 });
+      navigate('/author/papers', { state: { message: 'Paper submitted successfully!', showNotification: true } });
     } catch (error) {
-      console.error('Submission error:', error);
-      
       let errorMessage = 'Submission failed. Please try again.';
-      
       if (error.response) {
         if (error.response.status === 401) {
           errorMessage = 'Session expired. Please login again.';
@@ -211,7 +163,6 @@ const SubmitPaper = () => {
       } else if (error.request) {
         errorMessage = 'Network error. Please check your connection.';
       }
-      
       toast.error(errorMessage);
     } finally {
       setUploading(false);
@@ -221,275 +172,92 @@ const SubmitPaper = () => {
   const handleKeyPress = (e, type) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (type === 'keyword') {
-        handleKeywordAdd();
-      } else if (type === 'author') {
-        handleAuthorAdd();
-      }
+      if (type === 'keyword') handleKeywordAdd();
     }
   };
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom sx={{ mb: 3 }}>
-        Submit New Paper
-      </Typography>
-
+      <Typography variant="h4" gutterBottom sx={{ mb: 3 }}>Submit New Paper</Typography>
       <Paper sx={{ p: 4, boxShadow: 3 }}>
         <form onSubmit={handleSubmit(onSubmit)}>
           <Grid container spacing={3}>
-            {/* Paper Title */}
+            {/* Title */}
             <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Paper Title *"
-                {...register('title')}
-                error={!!errors.title}
-                helperText={errors.title?.message || 'Enter a descriptive title for your paper'}
-                placeholder="Enter your paper title"
-                variant="outlined"
-                size="medium"
-              />
+              <TextField fullWidth label="Paper Title *" {...register('title')} error={!!errors.title} helperText={errors.title?.message} placeholder="Enter your paper title" />
             </Grid>
-
             {/* Abstract */}
             <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Abstract *"
-                {...register('abstract')}
-                error={!!errors.abstract}
-                helperText={errors.abstract?.message || 'Provide a comprehensive abstract (minimum 100 characters)'}
-                multiline
-                rows={6}
-                placeholder="Provide a comprehensive abstract of your paper"
-                variant="outlined"
-                inputProps={{ maxLength: 1500 }}
-              />
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                Characters: {watch('abstract')?.length || 0}/1500
-              </Typography>
+              <TextField fullWidth label="Abstract *" {...register('abstract')} error={!!errors.abstract} helperText={errors.abstract?.message} multiline rows={6} placeholder="Provide a comprehensive abstract of your paper" inputProps={{ maxLength: 1500 }} />
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>Characters: {watch('abstract')?.length || 0}/1500</Typography>
             </Grid>
-
-            {/* Conference Track */}
+            {/* Track */}
             <Grid item xs={12}>
-              <TextField
-                fullWidth
-                select
-                label="Conference Track *"
-                {...register('track')}
-                error={!!errors.track}
-                helperText={errors.track?.message || 'Select the most relevant track for your paper'}
-                variant="outlined"
-              >
-                <MenuItem value="">
-                  <em>Select a track</em>
-                </MenuItem>
-                {tracks.map((track) => (
-                  <MenuItem key={track} value={track}>
-                    {track}
-                  </MenuItem>
-                ))}
+              <TextField fullWidth select label="Conference Track *" {...register('track')} error={!!errors.track} helperText={errors.track?.message}>
+                <MenuItem value=""><em>Select a track</em></MenuItem>
+                {tracks.map((track) => (<MenuItem key={track} value={track}>{track}</MenuItem>))}
               </TextField>
             </Grid>
-
             {/* Keywords */}
             <Grid item xs={12}>
-              <Typography variant="subtitle1" gutterBottom>
-                Keywords *
-              </Typography>
+              <Typography variant="subtitle1" gutterBottom>Keywords *</Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  value={keywordInput}
-                  onChange={(e) => setKeywordInput(e.target.value)}
-                  onKeyPress={(e) => handleKeyPress(e, 'keyword')}
-                  placeholder="Add keyword and press Enter"
-                  variant="outlined"
-                  disabled={keywords.length >= 5}
-                />
-                <Button
-                  variant="outlined"
-                  onClick={handleKeywordAdd}
-                  disabled={keywords.length >= 5 || !keywordInput.trim()}
-                  sx={{ whiteSpace: 'nowrap' }}
-                >
-                  Add
-                </Button>
+                <TextField fullWidth size="small" value={keywordInput} onChange={(e) => setKeywordInput(e.target.value)} onKeyPress={(e) => handleKeyPress(e, 'keyword')} placeholder="Add keyword and press Enter" disabled={keywords.length >= 5} />
+                <Button variant="outlined" onClick={handleKeywordAdd} disabled={keywords.length >= 5 || !keywordInput.trim()}>Add</Button>
               </Box>
-              
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
-                {keywords.map((keyword, index) => (
-                  <Chip
-                    key={`${keyword}-${index}`}
-                    label={keyword}
-                    onDelete={() => handleKeywordDelete(keyword)}
-                    deleteIcon={<Delete fontSize="small" />}
-                    color="primary"
-                    variant="outlined"
-                  />
+                {keywords.map((keyword, idx) => (
+                  <Chip key={idx} label={keyword} onDelete={() => handleKeywordDelete(keyword)} deleteIcon={<Delete />} color="primary" variant="outlined" />
                 ))}
               </Box>
-              
-              {errors.keywords && (
-                <Alert severity="error" sx={{ mt: 1 }}>
-                  {errors.keywords.message}
-                </Alert>
-              )}
-              
-              <Typography variant="caption" color="text.secondary">
-                Add 3-5 keywords that best describe your paper ({keywords.length}/5 added)
-              </Typography>
+              {errors.keywords && <Alert severity="error">{errors.keywords.message}</Alert>}
+              <Typography variant="caption" color="text.secondary">Add 3-5 keywords ({keywords.length}/5)</Typography>
             </Grid>
-
-            {/* Authors */}
+            {/* Authors - Structured */}
             <Grid item xs={12}>
-              <Typography variant="subtitle1" gutterBottom>
-                Authors *
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  value={authorInput}
-                  onChange={(e) => setAuthorInput(e.target.value)}
-                  onKeyPress={(e) => handleKeyPress(e, 'author')}
-                  placeholder="Add author (Name, Email, Affiliation)"
-                  variant="outlined"
-                  disabled={authors.length >= 10}
-                />
-                <Button
-                  variant="outlined"
-                  onClick={handleAuthorAdd}
-                  disabled={authors.length >= 10 || !authorInput.trim()}
-                  sx={{ whiteSpace: 'nowrap' }}
-                >
-                  Add
-                </Button>
-              </Box>
-              
+              <Typography variant="subtitle1" gutterBottom>Authors *</Typography>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
-                {authors.map((author, index) => (
-                  <Chip
-                    key={`${author}-${index}`}
-                    label={author}
-                    onDelete={() => handleAuthorDelete(author)}
-                    deleteIcon={<Delete fontSize="small" />}
-                    color="secondary"
-                    variant="outlined"
-                  />
+                {authors.map((author, idx) => (
+                  <Chip key={idx} label={`${author.name} (${author.email})`} onDelete={() => handleAuthorDelete(idx)} deleteIcon={<Delete />} color="secondary" variant="outlined" />
                 ))}
               </Box>
-              
-              {errors.authors && (
-                <Alert severity="error" sx={{ mt: 1 }}>
-                  {errors.authors.message}
-                </Alert>
-              )}
-              
-              <Typography variant="caption" color="text.secondary">
-                List all authors including yourself ({authors.length}/10 added)
-              </Typography>
+              <Grid container spacing={2} sx={{ mb: 2 }}>
+                <Grid item xs={12} sm={5}>
+                  <TextField fullWidth size="small" label="Author Name *" value={authorForm.name} onChange={(e) => setAuthorForm({ ...authorForm, name: e.target.value })} />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <TextField fullWidth size="small" label="Email *" value={authorForm.email} onChange={(e) => setAuthorForm({ ...authorForm, email: e.target.value })} />
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                  <TextField fullWidth size="small" label="Affiliation" value={authorForm.affiliation} onChange={(e) => setAuthorForm({ ...authorForm, affiliation: e.target.value })} />
+                </Grid>
+              </Grid>
+              <Button variant="outlined" startIcon={<Add />} onClick={handleAuthorAdd}>Add Author</Button>
+              {errors.authors && <Alert severity="error" sx={{ mt: 2 }}>{errors.authors.message}</Alert>}
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>Add at least one author ({authors.length}/10)</Typography>
             </Grid>
-
             {/* File Upload */}
             <Grid item xs={12}>
-              <Typography variant="subtitle1" gutterBottom>
-                Upload Paper (PDF only) *
-              </Typography>
-              
-              <Button
-                component="label"
-                variant="outlined"
-                startIcon={<CloudUpload />}
-                sx={{ mb: 2 }}
-                fullWidth
-                size="large"
-              >
+              <Typography variant="subtitle1" gutterBottom>Upload Paper (PDF only) *</Typography>
+              <Button component="label" variant="outlined" startIcon={<CloudUpload />} fullWidth size="large">
                 {file ? 'Change PDF File' : 'Choose PDF File'}
-                <input
-                  type="file"
-                  hidden
-                  accept=".pdf,application/pdf"
-                  onChange={handleFileChange}
-                />
+                <input type="file" hidden accept=".pdf,application/pdf" onChange={handleFileChange} />
               </Button>
-              
               {file && (
-                <Alert 
-                  severity="success" 
-                  sx={{ mt: 1 }}
-                  action={
-                    <Button 
-                      color="inherit" 
-                      size="small"
-                      onClick={() => {
-                        setFile(null);
-                        toast.info('File removed');
-                      }}
-                    >
-                      Remove
-                    </Button>
-                  }
-                >
-                  <Box>
-                    <Typography variant="body2" fontWeight="bold">
-                      Selected file: {file.name}
-                    </Typography>
-                    <Typography variant="caption">
-                      Size: {(file.size / 1024 / 1024).toFixed(2)} MB
-                    </Typography>
-                  </Box>
+                <Alert severity="success" sx={{ mt: 1 }} action={<Button color="inherit" size="small" onClick={() => { setFile(null); toast.info('File removed'); }}>Remove</Button>}>
+                  <Typography variant="body2" fontWeight="bold">{file.name}</Typography>
+                  <Typography variant="caption">Size: {(file.size / 1024 / 1024).toFixed(2)} MB</Typography>
                 </Alert>
               )}
-              
-              {fileError && (
-                <Alert severity="error" sx={{ mt: 1 }}>
-                  {fileError}
-                </Alert>
-              )}
-              
-              {!file && !fileError && (
-                <Alert severity="info" sx={{ mt: 1 }}>
-                  Please upload your paper in PDF format (max 10MB)
-                </Alert>
-              )}
+              {fileError && <Alert severity="error" sx={{ mt: 1 }}>{fileError}</Alert>}
+              {!file && !fileError && <Alert severity="info" sx={{ mt: 1 }}>Please upload your paper in PDF format (max 10MB)</Alert>}
             </Grid>
-
             {/* Submit Buttons */}
             <Grid item xs={12}>
-              <Box sx={{ 
-                display: 'flex', 
-                gap: 2, 
-                justifyContent: 'flex-end',
-                pt: 2,
-                borderTop: 1,
-                borderColor: 'divider'
-              }}>
-                <Button
-                  variant="outlined"
-                  onClick={() => navigate('/author/papers')}
-                  disabled={isSubmitting || uploading}
-                  size="large"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  variant="contained"
-                  disabled={isSubmitting || uploading}
-                  size="large"
-                  sx={{ minWidth: 150 }}
-                >
-                  {isSubmitting || uploading ? (
-                    <>
-                      <CircularProgress size={20} sx={{ mr: 1 }} />
-                      Submitting...
-                    </>
-                  ) : (
-                    'Submit Paper'
-                  )}
+              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', pt: 2, borderTop: 1, borderColor: 'divider' }}>
+                <Button variant="outlined" onClick={() => navigate('/author/papers')} disabled={isSubmitting || uploading}>Cancel</Button>
+                <Button type="submit" variant="contained" disabled={isSubmitting || uploading} sx={{ minWidth: 150 }}>
+                  {isSubmitting || uploading ? <><CircularProgress size={20} sx={{ mr: 1 }} /> Submitting...</> : 'Submit Paper'}
                 </Button>
               </Box>
             </Grid>

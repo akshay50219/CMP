@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const User = require('../models/user.model');
 const generateToken = require('../utils/token');
 const sendEmail = require('../utils/email');
+const crypto = require('crypto'); // for password reset
 
 /**
  * Submit a new paper
@@ -140,6 +141,7 @@ exports.updateProfile = async (req, res) => {
     res.status(500).json({ message: 'Failed to update profile' });
   }
 };
+
 /**
  * Login user
  */
@@ -147,7 +149,6 @@ exports.login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-
     if (!email || !password) {
       return res.status(400).json({
         message: "Email and password are required"
@@ -182,11 +183,114 @@ exports.login = async (req, res) => {
         role: user.role
       }
     });
-
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({
       message: "Login failed"
     });
+  }
+};
+
+// ==================== PASSWORD RESET FUNCTIONS ====================
+
+/**
+ * Forgot password – send reset link email
+ */
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'No user found with that email' });
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+    await user.save();
+
+    // Create reset URL
+    const resetUrl = `${req.protocol}://${req.get('host')}/reset-password/${resetToken}`;
+
+    const message = `
+      <h1>Password Reset Request</h1>
+      <p>You requested a password reset. Click the link below to reset your password (valid for 10 minutes):</p>
+      <a href="${resetUrl}" target="_blank">${resetUrl}</a>
+      <p>If you did not request this, please ignore this email.</p>
+    `;
+
+    try {
+      await sendEmail({
+        to: user.email,
+        subject: 'Password Reset Request',
+        html: message,
+      });
+      res.status(200).json({ message: 'Reset email sent successfully' });
+    } catch (emailError) {
+      user.resetPasswordToken = null;
+      user.resetPasswordExpire = null;
+      await user.save();
+      return res.status(500).json({ message: 'Email could not be sent' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+/**
+ * Reset password – using token
+ */
+exports.resetPassword = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    if (!password || password.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    }
+
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpire: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired token' });
+    }
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(12);
+    user.password = await bcrypt.hash(password, salt);
+    user.resetPasswordToken = null;
+    user.resetPasswordExpire = null;
+    await user.save();
+
+    res.status(200).json({ message: 'Password reset successful' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+/**
+ * Get current user profile
+ */
+exports.getProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.status(200).json(user);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
   }
 };

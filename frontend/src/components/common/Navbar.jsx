@@ -14,7 +14,8 @@ import { Menu as MenuIcon, AccountCircle, Notifications } from '@mui/icons-mater
 import { useState } from 'react';
 import { useAuth } from "../../context/AuthContext"; // Fixed import path
 import { useNavigate } from 'react-router-dom';
-import NotificationCenter from './NotificationCenter';
+// import NotificationCenter from './NotificationCenter'; // ❌ Disabled - no backend
+
 
 const Navbar = ({ sidebarOpen, toggleSidebar }) => {
   const { user, logout, isAuthenticated } = useAuth();
@@ -105,14 +106,15 @@ const Navbar = ({ sidebarOpen, toggleSidebar }) => {
             {getGreeting()}, {user?.name}
           </Typography>
 
-          {/* Notification Center */}
-          {NotificationCenter && <NotificationCenter />}
+          {/* ❌ Notification Center - Temporarily disabled (no backend) */}
+          {/* {NotificationCenter && <NotificationCenter />} */}
 
-          <Tooltip title="Notifications">
+          {/* ❌ Notifications icon - Temporarily disabled */}
+          {/* <Tooltip title="Notifications">
             <IconButton color="inherit">
               <Notifications />
             </IconButton>
-          </Tooltip>
+          </Tooltip> */}
 
           <Tooltip title="Account settings">
             <IconButton onClick={handleMenu} size="small">

@@ -28,10 +28,8 @@ import {
   Refresh,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { paperService } from '../../services/api';
+import { paperService, reviewerService } from '../../services/api';
 import { toast } from 'react-toastify';
-
-/* ✅ ADD */
 import SkeletonLoader from '../../components/SkeletonLoader';
 
 const AssignedPapers = () => {
@@ -43,7 +41,6 @@ const AssignedPapers = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
 
-  /* ✅ FIX: define function BEFORE useEffect */
   const fetchAssignedPapers = async () => {
     try {
       setLoading(true);
@@ -60,11 +57,7 @@ const AssignedPapers = () => {
     fetchAssignedPapers();
   }, []);
 
-  /* ✅ FIX: missing handlers */
-  const handleChangePage = (_, newPage) => {
-    setPage(newPage);
-  };
-
+  const handleChangePage = (_, newPage) => setPage(newPage);
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
@@ -73,11 +66,9 @@ const AssignedPapers = () => {
   const getDeadlineStatus = (deadline, reviewSubmitted) => {
     if (reviewSubmitted) return 'success';
     if (!deadline) return 'info';
-
     const now = new Date();
     const deadlineDate = new Date(deadline);
     const diffDays = Math.ceil((deadlineDate - now) / (1000 * 60 * 60 * 24));
-
     if (diffDays < 0) return 'error';
     if (diffDays <= 3) return 'warning';
     return 'info';
@@ -86,20 +77,19 @@ const AssignedPapers = () => {
   const getDeadlineText = (deadline, reviewSubmitted) => {
     if (reviewSubmitted) return 'Completed';
     if (!deadline) return 'No deadline';
-
     const now = new Date();
     const deadlineDate = new Date(deadline);
     const diffDays = Math.ceil((deadlineDate - now) / (1000 * 60 * 60 * 24));
-
     if (diffDays < 0) return `${Math.abs(diffDays)} days overdue`;
     if (diffDays === 0) return 'Today';
     if (diffDays === 1) return 'Tomorrow';
     return `${diffDays} days left`;
   };
 
-  const handleDownloadPaper = async (paperId, title) => {
+  // ✅ Corrected download function using reviewId
+  const handleDownloadPaper = async (reviewId, title) => {
     try {
-      const response = await paperService.downloadPaper(paperId);
+      const response = await reviewerService.downloadPaperForReview(reviewId);
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
@@ -107,7 +97,7 @@ const AssignedPapers = () => {
       document.body.appendChild(link);
       link.click();
       link.remove();
-    } catch {
+    } catch (error) {
       toast.error('Failed to download paper');
     }
   };
@@ -131,17 +121,11 @@ const AssignedPapers = () => {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
         <Typography variant="h4">Assigned Papers</Typography>
-        <Button
-          variant="contained"
-          startIcon={<Refresh />}
-          onClick={fetchAssignedPapers}
-          disabled={loading}
-        >
+        <Button variant="contained" startIcon={<Refresh />} onClick={fetchAssignedPapers} disabled={loading}>
           Refresh
         </Button>
       </Box>
 
-      {/* Filters */}
       <Paper sx={{ p: 2, mb: 3 }}>
         <Box sx={{ display: 'flex', gap: 2 }}>
           <Search />
@@ -168,7 +152,6 @@ const AssignedPapers = () => {
         </Box>
       </Paper>
 
-      {/* ✅ Skeleton Loader */}
       {loading && (
         <Paper sx={{ p: 2 }}>
           <SkeletonLoader rows={6} />
@@ -178,9 +161,7 @@ const AssignedPapers = () => {
       {!loading && (
         <Paper>
           {filteredPapers.length === 0 ? (
-            <Alert severity="info" sx={{ m: 2 }}>
-              No papers assigned to you.
-            </Alert>
+            <Alert severity="info" sx={{ m: 2 }}>No papers assigned to you.</Alert>
           ) : (
             <>
               <TableContainer>
@@ -204,14 +185,8 @@ const AssignedPapers = () => {
                           <TableCell>
                             <Chip
                               icon={<Timer />}
-                              label={getDeadlineText(
-                                paper.reviewDeadline,
-                                paper.reviewSubmitted
-                              )}
-                              color={getDeadlineStatus(
-                                paper.reviewDeadline,
-                                paper.reviewSubmitted
-                              )}
+                              label={getDeadlineText(paper.reviewDeadline, paper.reviewSubmitted)}
+                              color={getDeadlineStatus(paper.reviewDeadline, paper.reviewSubmitted)}
                               size="small"
                             />
                           </TableCell>
@@ -224,20 +199,12 @@ const AssignedPapers = () => {
                           </TableCell>
                           <TableCell align="center">
                             <Tooltip title="View">
-                              <IconButton
-                                onClick={() =>
-                                  navigate(`/reviewer/papers/${paper._id}`)
-                                }
-                              >
+                              <IconButton onClick={() => navigate(`/reviewer/papers/${paper._id}`)}>
                                 <Visibility />
                               </IconButton>
                             </Tooltip>
                             <Tooltip title="Download">
-                              <IconButton
-                                onClick={() =>
-                                  handleDownloadPaper(paper._id, paper.title)
-                                }
-                              >
+                              <IconButton onClick={() => handleDownloadPaper(paper.reviewId, paper.title)}>
                                 <Download />
                               </IconButton>
                             </Tooltip>
@@ -246,9 +213,7 @@ const AssignedPapers = () => {
                                 size="small"
                                 variant="contained"
                                 startIcon={<RateReview />}
-                                onClick={() =>
-                                  navigate(`/reviewer/review/${paper._id}`)
-                                }
+                                onClick={() => navigate(`/reviewer/review/${paper._id}`)}
                               >
                                 Review
                               </Button>
@@ -259,7 +224,6 @@ const AssignedPapers = () => {
                   </TableBody>
                 </Table>
               </TableContainer>
-
               <TablePagination
                 component="div"
                 count={filteredPapers.length}

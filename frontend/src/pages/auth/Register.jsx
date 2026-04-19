@@ -17,6 +17,7 @@ import {
 import { Visibility, VisibilityOff, Home as HomeIcon } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 
+// ✅ FIXED: Use function-based when() to avoid "branch is not a function"
 const schema = yup.object({
   name: yup.string().required('Name is required'),
   email: yup.string().email('Invalid email').required('Email is required'),
@@ -31,8 +32,9 @@ const schema = yup.object({
   role: yup.string().oneOf(['author', 'reviewer']).required('Role is required'),
   affiliation: yup.string().required('Affiliation is required'),
   expertise: yup.string().when('role', {
-    is: 'reviewer',
-    then: yup.string().required('Expertise is required for reviewers'),
+    is: (val) => val === 'reviewer',
+    then: (schema) => schema.required('Expertise is required for reviewers'),
+    otherwise: (schema) => schema.notRequired(),
   }),
 });
 
@@ -51,7 +53,13 @@ const Register = () => {
   } = useForm({
     resolver: yupResolver(schema),
     defaultValues: {
-      role: 'author',
+      name: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      role: 'author',      // ✅ ensures select is controlled from start
+      affiliation: '',
+      expertise: '',
     },
   });
 
@@ -68,15 +76,8 @@ const Register = () => {
 
   return (
     <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ mt: 2 }}>
-      {/* Home link at top */}
       <Box sx={{ mb: 3, textAlign: 'center' }}>
-        <Button
-          component={Link}
-          to="/"
-          startIcon={<HomeIcon />}
-          variant="text"
-          size="small"
-        >
+        <Button component={Link} to="/" startIcon={<HomeIcon />} variant="text" size="small">
           Back to Home
         </Button>
       </Box>
@@ -84,34 +85,16 @@ const Register = () => {
       <Typography variant="h5" gutterBottom align="center">
         Create Account
       </Typography>
-      
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
+
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
       <Grid container spacing={2}>
         <Grid item xs={12}>
-          <TextField
-            fullWidth
-            label="Full Name"
-            {...register('name')}
-            error={!!errors.name}
-            helperText={errors.name?.message}
-          />
+          <TextField fullWidth label="Full Name" {...register('name')} error={!!errors.name} helperText={errors.name?.message} />
         </Grid>
-        
         <Grid item xs={12}>
-          <TextField
-            fullWidth
-            label="Email Address"
-            {...register('email')}
-            error={!!errors.email}
-            helperText={errors.email?.message}
-          />
+          <TextField fullWidth label="Email Address" {...register('email')} error={!!errors.email} helperText={errors.email?.message} />
         </Grid>
-        
         <Grid item xs={12} sm={6}>
           <TextField
             fullWidth
@@ -131,7 +114,6 @@ const Register = () => {
             }}
           />
         </Grid>
-        
         <Grid item xs={12} sm={6}>
           <TextField
             fullWidth
@@ -151,31 +133,15 @@ const Register = () => {
             }}
           />
         </Grid>
-        
         <Grid item xs={12} sm={6}>
-          <TextField
-            select
-            fullWidth
-            label="Role"
-            {...register('role')}
-            error={!!errors.role}
-            helperText={errors.role?.message}
-          >
+          <TextField select fullWidth label="Role" {...register('role')} error={!!errors.role} helperText={errors.role?.message}>
             <MenuItem value="author">Author</MenuItem>
             <MenuItem value="reviewer">Reviewer</MenuItem>
           </TextField>
         </Grid>
-        
         <Grid item xs={12} sm={6}>
-          <TextField
-            fullWidth
-            label="Affiliation"
-            {...register('affiliation')}
-            error={!!errors.affiliation}
-            helperText={errors.affiliation?.message}
-          />
+          <TextField fullWidth label="Affiliation" {...register('affiliation')} error={!!errors.affiliation} helperText={errors.affiliation?.message} />
         </Grid>
-        
         {selectedRole === 'reviewer' && (
           <Grid item xs={12}>
             <TextField
@@ -190,14 +156,7 @@ const Register = () => {
         )}
       </Grid>
 
-      <Button
-        type="submit"
-        fullWidth
-        variant="contained"
-        size="large"
-        sx={{ mt: 3, mb: 2 }}
-        disabled={isSubmitting}
-      >
+      <Button type="submit" fullWidth variant="contained" size="large" sx={{ mt: 3, mb: 2 }} disabled={isSubmitting}>
         {isSubmitting ? 'Creating Account...' : 'Sign Up'}
       </Button>
 
@@ -205,9 +164,7 @@ const Register = () => {
         <Typography variant="body2" color="text.secondary">
           Already have an account?{' '}
           <Link to="/login" style={{ textDecoration: 'none' }}>
-            <Button variant="text" color="primary">
-              Sign In
-            </Button>
+            <Button variant="text" color="primary">Sign In</Button>
           </Link>
         </Typography>
       </Box>

@@ -3,6 +3,7 @@ import AuthorDashboard from './Dashboard';
 import SubmitPaper from './SubmitPaper';
 import MyPapers from './MyPapers';
 import PaperDetails from './PaperDetails';
+import EditPaper from './EditPaper';
 
 const AuthorRoutes = () => {
   return (
@@ -11,6 +12,7 @@ const AuthorRoutes = () => {
       <Route path="submit" element={<SubmitPaper />} />
       <Route path="papers" element={<MyPapers />} />
       <Route path="papers/:id" element={<PaperDetails />} />
+      <Route path="papers/:id/edit" element={<EditPaper />} />
       <Route path="*" element={<Navigate to="/author" replace />} />
     </Routes>
   );

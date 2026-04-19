@@ -10,6 +10,7 @@ const {
   getMyPapers,
   updatePaper,
   deletePaper,
+  downloadPaper,
 } = require('../controllers/author.controller');
 
 // Author-only middleware chain
@@ -30,5 +31,8 @@ router.put('/papers/:id', updatePaper);
 
 // Delete paper (only if submitted)
 router.delete('/papers/:id', deletePaper);
+
+// Download papers
+router.get('/papers/:paperId/download', downloadPaper);
 
 module.exports = router;

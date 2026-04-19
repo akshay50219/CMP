@@ -106,17 +106,19 @@ const SubmitReview = () => {
   }, [paperId]);
 
   const handleDownload = async () => {
-    try {
-      const response = await paperService.downloadPaper(paperId);
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `paper-${paper.title}.pdf`;
-      link.click();
-    } catch {
-      toast.error('Download failed');
-    }
-  };
+  try {
+    // You need to have reviewId available. If not, fetch it from paper object.
+    // Assuming you have reviewId from the route or from paper data.
+    const response = await reviewerService.downloadPaperForReview(reviewId);
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `paper-${paper.title}.pdf`;
+    link.click();
+  } catch (error) {
+    toast.error('Download failed');
+  }
+};
 
   const onSubmit = async (data) => {
     if (isLocked) return;

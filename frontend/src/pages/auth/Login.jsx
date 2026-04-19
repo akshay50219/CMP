@@ -124,14 +124,14 @@ const Login = () => {
         }}
       />
 
-      {/* ✅ ADDED: Forgot Password Link */}
-      <Box sx={{ textAlign: 'right', mt: 1 }}>
+      {/* ❌ Forgot Password Link - Disabled (backend missing) */}
+      {/* <Box sx={{ textAlign: 'right', mt: 1 }}>
         <Link to="/forgot-password" style={{ textDecoration: 'none' }}>
           <Typography variant="body2" color="primary">
             Forgot password?
           </Typography>
         </Link>
-      </Box>
+      </Box> */}
 
       <Button
         type="submit"

@@ -28,8 +28,8 @@ const Sidebar = ({ open }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  /* 🔒 SAFETY: Don’t render sidebar until user is loaded */
-  if (!user) {
+  // ✅ Safety: Don't render if user or user.role is missing
+  if (!user || !user.role) {
     return null;
   }
 
@@ -55,7 +55,6 @@ const Sidebar = ({ open }) => {
     { text: 'System Settings', icon: <Settings />, path: '/admin/settings' },
   ];
 
-  /* ✅ EXPLICIT ROLE FILTERING */
   const roleMenuMap = {
     admin: adminMenuItems,
     reviewer: reviewerMenuItems,
@@ -116,7 +115,7 @@ const Sidebar = ({ open }) => {
           </ListItem>
         ))}
 
-        {/* 🔎 SAFETY FALLBACK */}
+        {/* Safety Fallback */}
         {menuItems.length === 0 && (
           <Box sx={{ p: 2 }}>
             <Typography variant="body2" color="text.secondary">

@@ -204,6 +204,15 @@ const ManageUsers = () => {
 
   const selectedRole = watch('role');
 
+  const handleChangePage = (event, newPage) => {
+  setPage(newPage);
+};
+
+const handleChangeRowsPerPage = (event) => {
+  setRowsPerPage(parseInt(event.target.value, 10));
+  setPage(0);
+};
+
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -563,6 +572,8 @@ const ManageUsers = () => {
       </Dialog>
     </Box>
   );
+
+  
 };
 
 export default ManageUsers;

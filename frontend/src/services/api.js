@@ -6,7 +6,7 @@ const API = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000, // Add timeout
+  timeout: 10000,
 });
 
 // Request interceptor
@@ -16,12 +16,9 @@ API.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    
-    // Special handling for FormData (file uploads)
     if (config.data instanceof FormData) {
       config.headers['Content-Type'] = 'multipart/form-data';
     }
-    
     return config;
   },
   (error) => Promise.reject(error)
@@ -29,13 +26,9 @@ API.interceptors.request.use(
 
 // Response interceptor
 API.interceptors.response.use(
-  (response) => {
-    // You can add any global response handling here
-    return response;
-  },
+  (response) => response,
   (error) => {
     const { response } = error;
-    
     if (response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
@@ -48,18 +41,18 @@ API.interceptors.response.use(
     } else if (response?.status === 500) {
       toast.error('Server error. Please try again later.');
     } else if (response?.data?.message) {
-      // Show backend error message
       toast.error(response.data.message);
     } else if (!response) {
       toast.error('Network error. Please check your connection.');
     }
     error.normalized = normalizeApiError(error);
-
     return Promise.reject(error);
   }
 );
 
-// Auth Services
+// ================================
+// AUTH SERVICES
+// ================================
 export const authService = {
   login: (credentials) => API.post('/auth/login', credentials),
   register: (userData) => API.post('/auth/register', userData),
@@ -72,134 +65,141 @@ export const authService = {
   changePassword: (passwordData) => API.put('/auth/change-password', passwordData),
 };
 
-// Author Services
+// ================================
+// AUTHOR SERVICES
+// ================================
 export const authorService = {
-  // Paper submission and management for authors
-  submitPaper: (formData) => {
-    // Note: FormData should contain: title, abstract, keywords[], authors[], pdf (file)
-    return API.post('/author/papers', formData);
-  },
+  submitPaper: (formData) => API.post('/author/papers', formData),
   getMyPapers: () => API.get('/author/papers'),
   getPaper: (id) => API.get(`/author/papers/${id}`),
   updatePaper: (id, paperData) => API.put(`/author/papers/${id}`, paperData),
   withdrawPaper: (id) => API.delete(`/author/papers/${id}`),
-  
-  // Download paper file
-  downloadPaper: (paperId) => 
-    API.get(`/author/papers/${paperId}/download`, { 
-      responseType: 'blob',
-      headers: {
-        'Accept': 'application/pdf'
-      }
-    }),
+  downloadPaper: (paperId) => API.get(`/author/papers/${paperId}/download`, { responseType: 'blob', headers: { 'Accept': 'application/pdf' } }),
 };
 
-// Reviewer Services
+// ================================
+// REVIEWER SERVICES
+// ================================
 export const reviewerService = {
-  // Get assigned papers
   getAssignedPapers: () => API.get('/reviewer/papers'),
   getPaperForReview: (reviewId) => API.get(`/reviewer/papers/${reviewId}`),
-  
-  // Download paper for review
-  downloadPaperForReview: (reviewId) => 
-    API.get(`/reviewer/papers/${reviewId}/download`, { 
-      responseType: 'blob',
-      headers: {
-        'Accept': 'application/pdf'
-      }
-    }),
-  
-  // Submit review
-  submitReview: (reviewId, reviewData) => 
-    API.post(`/reviewer/papers/${reviewId}/review`, reviewData),
-  
-  // Get my submitted reviews
+  downloadPaperForReview: (reviewId) => API.get(`/reviewer/papers/${reviewId}/download`, { responseType: 'blob', headers: { 'Accept': 'application/pdf' } }),
+  submitReview: (reviewId, reviewData) => API.post(`/reviewer/papers/${reviewId}/review`, reviewData),
   getMyReviews: () => API.get('/reviewer/reviews'),
-  updateReview: (reviewId, reviewData) => 
-    API.put(`/reviewer/reviews/${reviewId}`, reviewData),
+  updateReview: (reviewId, reviewData) => API.put(`/reviewer/reviews/${reviewId}`, reviewData),
 };
 
-// Admin Services
+// ✅ Alias for components that import 'reviewService'
+export const reviewService = reviewerService;
+
+// ================================
+// ADMIN SERVICES
+// ================================
 export const adminService = {
-  // User management
   getAllUsers: (params) => API.get('/admin/users', { params }),
   getUser: (userId) => API.get(`/admin/users/${userId}`),
   createUser: (userData) => API.post('/admin/users', userData),
   updateUser: (userId, userData) => API.put(`/admin/users/${userId}`, userData),
   deleteUser: (userId) => API.delete(`/admin/users/${userId}`),
-  updateUserRole: (userId, role) => 
-    API.put(`/admin/users/${userId}/role`, { role }),
-  
-  // Reviewer management
+  updateUserRole: (userId, role) => API.put(`/admin/users/${userId}/role`, { role }),
   getReviewers: () => API.get('/admin/reviewers'),
-  getAvailableReviewers: (paperId) => 
-    API.get(`/admin/papers/${paperId}/available-reviewers`),
-  
-  // Paper management
+  getAvailableReviewers: (paperId) => API.get(`/admin/papers/${paperId}/available-reviewers`),
   getAllPapers: (params) => API.get('/admin/papers', { params }),
   getPaperDetails: (paperId) => API.get(`/admin/papers/${paperId}`),
-  updatePaperStatus: (paperId, status) => 
-    API.put(`/admin/papers/${paperId}/status`, { status }),
-  assignReviewer: (paperId, reviewerId) => 
-    API.post(`/admin/papers/${paperId}/assign-reviewer`, { reviewerId }),
-  removeReviewer: (paperId, reviewerId) => 
-    API.delete(`/admin/papers/${paperId}/reviewer/${reviewerId}`),
-  makeFinalDecision: (paperId, decision) => 
-    API.post(`/admin/papers/${paperId}/decision`, { decision }),
-  lockFinalDecision: (paperId) => 
-    API.put(`/admin/papers/${paperId}/lock-decision`),
-  
-  // Review management
+  updatePaperStatus: (paperId, status) => API.put(`/admin/papers/${paperId}/status`, { status }),
+  assignReviewer: (paperId, reviewerId) => API.post(`/admin/papers/${paperId}/assign-reviewer`, { reviewerId }),
+  removeReviewer: (paperId, reviewerId) => API.delete(`/admin/papers/${paperId}/reviewer/${reviewerId}`),
+  makeFinalDecision: (paperId, decision) => API.post(`/admin/papers/${paperId}/decision`, { decision }),
+  lockFinalDecision: (paperId) => API.put(`/admin/papers/${paperId}/lock-decision`),
   getPaperReviews: (paperId) => API.get(`/admin/papers/${paperId}/reviews`),
-  
-  // Statistics
   getStatistics: () => API.get('/admin/stats'),
-  exportData: (format = 'csv') => 
-    API.get(`/admin/export/${format}`, { responseType: 'blob' }),
+  exportData: (format = 'csv') => API.get(`/admin/export/${format}`, { responseType: 'blob' }),
 };
 
-// Common Services (accessible by multiple roles)
+// ================================
+// STATS SERVICES
+// ================================
+export const statsService = {
+  getDashboardStats: () => API.get('/stats/dashboard'),
+  getSubmissionStats: (params) => API.get('/stats/submissions', { params }),
+  getAdminStats: () => API.get('/stats/admin'),
+  getPublicStats: () => API.get('/stats/public'),
+};
+
+// ================================
+// COMMON SERVICES (role-agnostic)
+// ================================
 export const commonService = {
-  // Paper services accessible by both admin and reviewers
   getPaper: (paperId) => API.get(`/papers/${paperId}`),
   getPaperReviews: (paperId) => API.get(`/papers/${paperId}/reviews`),
-  
-  // Statistics for public/admin
   getPublicStats: () => API.get('/stats/public'),
-  
-  // Conference program
   generateProgram: (options) => API.post('/program/generate', options),
-  downloadProgram: () => 
-    API.get('/program/download', { responseType: 'blob' }),
+  downloadProgram: () => API.get('/program/download', { responseType: 'blob' }),
+  downloadPaper: (paperId) => API.get(`/papers/${paperId}/download`, { responseType: 'blob', headers: { 'Accept': 'application/pdf' } }),
 };
 
-// File Upload Utility
+// ================================
+// PAPER SERVICE – UNIFIED FOR CONVENIENCE
+// ================================
+export const paperService = {
+  // Author endpoints
+  submitPaper: authorService.submitPaper,
+  getMyPapers: authorService.getMyPapers,
+  getPaper: authorService.getPaper,
+  updatePaper: authorService.updatePaper,
+  withdrawPaper: authorService.withdrawPaper,
+  downloadPaper: authorService.downloadPaper,
+
+  // Reviewer endpoints
+  getAssignedPapers: reviewerService.getAssignedPapers,
+  submitReview: reviewerService.submitReview,
+  getMyReviews: reviewerService.getMyReviews,
+
+  // Admin endpoints
+  getAllPapers: adminService.getAllPapers,
+  assignReviewer: adminService.assignReviewer,
+  makeDecision: adminService.makeFinalDecision,
+  getPaperReviews: adminService.getPaperReviews,
+  getStatistics: adminService.getStatistics,
+
+  // Common / program
+  generateConferenceProgram: commonService.downloadProgram,
+};
+
+// ================================
+// USER SERVICE (legacy alias for admin user methods)
+// ================================
+export const userService = {
+  getAllUsers: adminService.getAllUsers,
+  getUser: adminService.getUser,
+  createUser: adminService.createUser,
+  updateUser: adminService.updateUser,
+  deleteUser: adminService.deleteUser,
+};
+
+// ================================
+// FILE UPLOAD UTILITY
+// ================================
 export const uploadService = {
   uploadFile: (file, onUploadProgress) => {
     const formData = new FormData();
     formData.append('file', file);
-    
     return API.post('/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+      headers: { 'Content-Type': 'multipart/form-data' },
       onUploadProgress,
     });
   },
 };
 
-// Helper function to extract error message
+// ================================
+// HELPER FUNCTIONS
+// ================================
 export const getErrorMessage = (error) => {
-  if (error.response?.data?.message) {
-    return error.response.data.message;
-  }
-  if (error.message) {
-    return error.message;
-  }
+  if (error.response?.data?.message) return error.response.data.message;
+  if (error.message) return error.message;
   return 'An unexpected error occurred';
 };
 
-// Helper function to handle file downloads
 export const handleFileDownload = (blob, filename) => {
   const url = window.URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -211,38 +211,22 @@ export const handleFileDownload = (blob, filename) => {
   window.URL.revokeObjectURL(url);
 };
 
-// ================================
-// API ERROR NORMALIZATION LAYER
-// ================================
-
 export const normalizeApiError = (error) => {
-  // Default normalized error object
   const normalizedError = {
     success: false,
     status: null,
     message: 'Something went wrong. Please try again.',
     originalError: error,
   };
-
-  // Axios response error
   if (error.response) {
     normalizedError.status = error.response.status;
-
-    if (error.response.data?.message) {
-      normalizedError.message = error.response.data.message;
-    } else if (typeof error.response.data === 'string') {
-      normalizedError.message = error.response.data;
-    }
-  }
-  // Network / timeout error
-  else if (error.request) {
+    if (error.response.data?.message) normalizedError.message = error.response.data.message;
+    else if (typeof error.response.data === 'string') normalizedError.message = error.response.data;
+  } else if (error.request) {
     normalizedError.message = 'Network error. Please check your internet connection.';
-  }
-  // Other JS errors
-  else if (error.message) {
+  } else if (error.message) {
     normalizedError.message = error.message;
   }
-
   return normalizedError;
 };
 

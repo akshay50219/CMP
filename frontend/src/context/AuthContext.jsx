@@ -24,7 +24,7 @@ export const AuthProvider = ({ children }) => {
           
           // Check if token is expired
           if (decoded.exp < currentTime) {
-            console.warn('Token expired');
+            // console.warn('Token expired');
             logout();
             return;
           }

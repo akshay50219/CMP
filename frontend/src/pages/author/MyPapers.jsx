@@ -20,7 +20,6 @@ import {
   TextField,
   MenuItem,
   Alert,
-  LinearProgress,
   Tooltip,
 } from '@mui/material';
 import {
@@ -35,8 +34,6 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { paperService } from '../../services/api';
 import { toast } from 'react-toastify';
-
-/* ✅ ADD */
 import SkeletonLoader from '../../components/SkeletonLoader';
 
 const MyPapers = () => {
@@ -49,10 +46,7 @@ const MyPapers = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [paperToDelete, setPaperToDelete] = useState(null);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [paperToEdit, setPaperToEdit] = useState(null);
-  const [editTitle, setEditTitle] = useState('');
-  const [editAbstract, setEditAbstract] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchPapers();
@@ -67,6 +61,42 @@ const MyPapers = () => {
       toast.error('Failed to load papers');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteClick = (paper) => {
+    setPaperToDelete(paper);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!paperToDelete) return;
+    try {
+      setDeleting(true);
+      await paperService.withdrawPaper(paperToDelete._id);
+      toast.success('Paper deleted successfully');
+      fetchPapers(); // refresh list
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Delete failed');
+    } finally {
+      setDeleting(false);
+      setDeleteDialogOpen(false);
+      setPaperToDelete(null);
+    }
+  };
+
+  const handleDownload = async (paperId, title) => {
+    try {
+      const response = await paperService.downloadPaper(paperId);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `paper-${title}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      toast.error('Failed to download paper');
     }
   };
 
@@ -98,6 +128,12 @@ const MyPapers = () => {
       needs_revision: 'Needs Revision',
     };
     return labels[status] || status;
+  };
+
+  const handleChangePage = (event, newPage) => setPage(newPage);
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
   };
 
   return (
@@ -144,7 +180,7 @@ const MyPapers = () => {
         </Box>
       </Paper>
 
-      {/* ✅ Skeleton Loader */}
+      {/* Skeleton Loader */}
       {loading && (
         <Paper sx={{ p: 2 }}>
           <SkeletonLoader rows={6} />
@@ -193,10 +229,30 @@ const MyPapers = () => {
                               </IconButton>
                             </Tooltip>
                             <Tooltip title="Download">
-                              <IconButton>
+                              <IconButton onClick={() => handleDownload(paper._id, paper.title)}>
                                 <Download />
                               </IconButton>
                             </Tooltip>
+                            {paper.status === 'submitted' && (
+                              <>
+                                <Tooltip title="Edit">
+                                  <IconButton
+                                    onClick={() => navigate(`/author/papers/${paper._id}/edit`)}
+                                    color="primary"
+                                  >
+                                    <Edit />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Delete">
+                                  <IconButton
+                                    onClick={() => handleDeleteClick(paper)}
+                                    color="error"
+                                  >
+                                    <Delete />
+                                  </IconButton>
+                                </Tooltip>
+                              </>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -209,16 +265,32 @@ const MyPapers = () => {
                 count={filteredPapers.length}
                 page={page}
                 rowsPerPage={rowsPerPage}
-                onPageChange={(e, p) => setPage(p)}
-                onRowsPerPageChange={(e) => {
-                  setRowsPerPage(parseInt(e.target.value, 10));
-                  setPage(0);
-                }}
+                onPageChange={handleChangePage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
               />
             </>
           )}
         </Paper>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+        <DialogTitle>Confirm Deletion</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete "<strong>{paperToDelete?.title}</strong>"?
+            This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)} disabled={deleting}>
+            Cancel
+          </Button>
+          <Button onClick={handleConfirmDelete} color="error" variant="contained" disabled={deleting}>
+            {deleting ? 'Deleting...' : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

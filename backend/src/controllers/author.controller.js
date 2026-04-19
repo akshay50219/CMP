@@ -212,3 +212,34 @@ exports.getMyPapers = async (req, res) => {
     });
   }
 };
+
+/**
+ * Download paper file for author
+ */
+exports.downloadPaper = async (req, res) => {
+  try {
+    const paperId = req.params.paperId;
+    const userId = req.user._id;
+
+    const paper = await Paper.findById(paperId);
+    if (!paper) {
+      return res.status(404).json({ message: 'Paper not found' });
+    }
+
+    // Check if the logged-in user is the submitter
+    if (paper.submitter.toString() !== userId.toString()) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const fs = require('fs');
+    const filePath = path.resolve(process.cwd(), paper.filePath);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: 'File not found on server' });
+    }
+
+    res.download(filePath, paper.fileName);
+  } catch (error) {
+    console.error('Download error:', error);
+    res.status(500).json({ message: 'Failed to download paper' });
+  }
+};

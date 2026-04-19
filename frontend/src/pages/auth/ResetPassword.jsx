@@ -21,30 +21,16 @@ const ResetPassword = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    if (!password || !confirmPassword) {
-      toast.error('Please fill all fields');
-      return;
-    }
-
-    if (password.length < 6) {
-      toast.error('Password must be at least 6 characters');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      toast.error('Passwords do not match');
-      return;
-    }
-
-    // 🔒 FRONTEND-ONLY MODE
-    setSubmitted(true);
-    toast.info(
-      'Password reset will be enabled once backend integration is complete'
-    );
-  };
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    await axios.post(`/api/auth/reset-password/${token}`, { password });
+    toast.success('Password reset successful. Please login.');
+    navigate('/login');
+  } catch (err) {
+    toast.error(err.response?.data?.message || 'Reset failed');
+  }
+};
 
   return (
     <Box sx={{ maxWidth: 400, mx: 'auto', mt: 4 }}>

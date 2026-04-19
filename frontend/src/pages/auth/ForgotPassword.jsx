@@ -13,20 +13,16 @@ const ForgotPassword = () => {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    if (!email) {
-      toast.error('Please enter your email');
-      return;
-    }
-
-    // 🔒 TEMPORARY FRONTEND-ONLY MODE
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    await axios.post('/api/auth/forgot-password', { email });
+    toast.success('Reset link sent to your email');
     setSubmitted(true);
-    toast.info(
-      'Forgot password feature will be enabled once backend is ready'
-    );
-  };
+  } catch (err) {
+    toast.error(err.response?.data?.message || 'Failed to send reset email');
+  }
+};
 
   return (
     <Box sx={{ maxWidth: 400, mx: 'auto', mt: 4 }}>

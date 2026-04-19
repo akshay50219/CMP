@@ -47,6 +47,16 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+
+    // Inside userSchema (add after `expertise` field)
+resetPasswordToken: {
+  type: String,
+  default: null,
+},
+resetPasswordExpire: {
+  type: Date,
+  default: null,
+},
   },
   { timestamps: true }
 );

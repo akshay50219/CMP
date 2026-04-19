@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+
 import {
   Box,
   Typography,
@@ -19,6 +20,10 @@ import {
   IconButton,
   Tab,
   Tabs,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import {
   ArrowBack,
@@ -28,12 +33,14 @@ import {
   Email,
   School,
   Assessment,
-  Comment,
   CheckCircle,
   Close,
   Edit,
+  Delete,
+  Warning,
 } from '@mui/icons-material';
-import { paperService, reviewService } from '../../services/api';
+
+import { paperService, reviewService, commonService } from '../../services/api';
 import { toast } from 'react-toastify';
 
 const PaperDetails = () => {
@@ -43,6 +50,8 @@ const PaperDetails = () => {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchPaperDetails();
@@ -69,17 +78,31 @@ const PaperDetails = () => {
   };
 
   const handleDownload = async () => {
+  try {
+    const response = await commonService.downloadPaper(id);
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `paper-${paper.title}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } catch (error) {
+    toast.error('Failed to download paper');
+  }
+};
+
+  const handleDelete = async () => {
     try {
-      const response = await paperService.downloadPaper(id);
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `paper-${paper.title}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      setDeleting(true);
+      await paperService.withdrawPaper(id);
+      toast.success('Paper deleted successfully');
+      navigate('/author/papers');
     } catch (error) {
-      toast.error('Failed to download paper');
+      toast.error(error.response?.data?.message || 'Failed to delete paper');
+    } finally {
+      setDeleting(false);
+      setDeleteDialogOpen(false);
     }
   };
 
@@ -169,13 +192,23 @@ const PaperDetails = () => {
           Download Paper
         </Button>
         {paper.status === 'submitted' && (
-          <Button
-            variant="contained"
-            startIcon={<Edit />}
-            onClick={() => navigate(`/author/papers/${id}/edit`)}
-          >
-            Edit Paper
-          </Button>
+          <>
+            <Button
+              variant="contained"
+              startIcon={<Edit />}
+              onClick={() => navigate(`/author/papers/${id}/edit`)}
+            >
+              Edit Paper
+            </Button>
+            <Button
+              variant="contained"
+              color="error"
+              startIcon={<Delete />}
+              onClick={() => setDeleteDialogOpen(true)}
+            >
+              Delete Paper
+            </Button>
+          </>
         )}
       </Box>
 
@@ -480,6 +513,29 @@ const PaperDetails = () => {
           </Grid>
         </Paper>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Warning color="error" /> Confirm Deletion
+        </DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete the paper <strong>"{paper.title}"</strong>?
+          </Typography>
+          <Typography variant="body2" color="error" sx={{ mt: 2 }}>
+            This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)} disabled={deleting}>
+            Cancel
+          </Button>
+          <Button onClick={handleDelete} color="error" variant="contained" disabled={deleting}>
+            {deleting ? 'Deleting...' : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
